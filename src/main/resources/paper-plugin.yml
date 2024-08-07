@@ -1,0 +1,4 @@
+name: FixTrialSpawners
+version: '${version}'
+main: net.malfact.fixtrialspawners.FixTrialSpawners
+api-version: '1.21'
