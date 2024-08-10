@@ -27,7 +27,7 @@ public final class FixTrialSpawners extends JavaPlugin {
         Thread thread = new Thread(() -> {
             getComponentLogger().warn(":: <<Started Reading Region Files>> ::");
             var chunks = readRegionFolder(Paths.get(worldFolder + "/region"));
-            getComponentLogger().warn(":: <<Finished Reading Region Files>> | {} Chunks Scheduled", chunks.size());
+            getComponentLogger().warn(":: <<Finished Reading Region Files>> | {} Chunks Scheduled for repair", chunks.size());
 
             var runnable = new ChunkRunnable(Bukkit.getWorlds().getFirst(), new ArrayList<>(chunks.values()));
             runnable.runTaskTimer(this, 1L, 1L);
@@ -55,10 +55,10 @@ public final class FixTrialSpawners extends JavaPlugin {
 
         @Override
         public void run() {
-            getComponentLogger().warn(":: [ {} ] Chunks Working / [ {} ] Remaining ::", runningChunks, chunks.size());
+            getComponentLogger().warn(":: [ {} ] Chunks Working / [ {} ] Waiting ::", runningChunks, chunks.size());
             if (runningChunks <= 0 && chunks.isEmpty()) {
                 getComponentLogger().warn(":: Finished Repairing Trial Spawners! ::");
-                getComponentLogger().warn(":: Stop the Server and Remove this plugin! ::");
+                getComponentLogger().error(":: !! Stop the Server and Remove this plugin !! ::");
                 this.cancel();
                 return;
             }
@@ -76,7 +76,7 @@ public final class FixTrialSpawners extends JavaPlugin {
                     while (chunkData.hasNext()) {
                         var data = chunkData.next();
                         try {
-                            var state = chunk.getBlock(data.x, data.y, data.z).getState();
+                            var state = chunk.getBlock(data.x, data.y, data.z).getState(false);
                             if (state instanceof TrialSpawner spawner) {
                                 repairSpawner(spawner, data);
                             } else {
@@ -244,38 +244,16 @@ public final class FixTrialSpawners extends JavaPlugin {
         var blockData = spawner.getBlockData();
         if (blockData instanceof org.bukkit.block.data.type.TrialSpawner spawnerData) {
             spawnerData.setTrialSpawnerState(org.bukkit.block.data.type.TrialSpawner.State.WAITING_FOR_PLAYERS);
-            spawner.setBlockData(blockData);
+            spawner.setBlockData(spawnerData);
         }
 
         getComponentLogger().info("  | Repaired {}", data);
     }
 
-    @SuppressWarnings("UnstableApiUsage")
-    private void readSpawner(TrialSpawner spawner) {
-        var logger = getComponentLogger();
-
-        var config = spawner.getNormalConfiguration();
-        logger.info("Trial Spawner::");
-        logger.info("---Normal---");
-        logger.info("  Type: {}", config.getSpawnedType());
-        logger.info("  Base Simultaneous Entities       {}", config.getBaseSimultaneousEntities());
-        logger.info("  Additional Simultaneous Entities {}", config.getAdditionalSimultaneousEntities());
-        logger.info("  Base Spawns Before Cooldown      {}", config.getAdditionalSpawnsBeforeCooldown());
-        logger.info("  Additional pawns Before Cooldown {}", config.getBaseSimultaneousEntities());
-
-        logger.info("---Ominous---");
-        config = spawner.getOminousConfiguration();
-        logger.info("  Type: {}", config.getSpawnedType());
-        logger.info("  Base Simultaneous Entities       {}", config.getBaseSimultaneousEntities());
-        logger.info("  Additional Simultaneous Entities {}", config.getAdditionalSimultaneousEntities());
-        logger.info("  Base Spawns Before Cooldown      {}", config.getAdditionalSpawnsBeforeCooldown());
-        logger.info("  Additional pawns Before Cooldown {}", config.getBaseSimultaneousEntities());
-    }
-
     private record SpawnerData(int x, int y, int z, SpawnerType spawnerType) {
         @Override
         public String toString() {
-            return spawnerType + " @ <" + x + ", " + y + ", " + z + ">";
+            return String.format("%-20s @ <%s, %s, %s>", spawnerType, x, y, z);
         }
     }
 
